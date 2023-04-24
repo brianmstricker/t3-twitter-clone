@@ -1,20 +1,53 @@
-import { SignIn, SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
+import { SignInButton, useUser } from "@clerk/nextjs";
 import { type NextPage } from "next";
 import Head from "next/head";
-import Link from "next/link";
-import { api } from "~/utils/api";
+import { type RouterOutputs, api } from "~/utils/api";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import Image from "next/image";
 
+dayjs.extend(relativeTime);
 const CreatePostWizard = () => {
   const { user } = useUser();
+  console.log(user);
   if (!user) return null;
   return (
     <div className="flex w-full gap-4">
-      <img
+      <Image
         src={user.profileImageUrl}
         alt="Profile Image"
-        className="h-14 w-14 rounded-full"
+        className="rounded-full"
+        width={56}
+        height={56}
       />
-      <input placeholder="Type some emojis!" className="grow bg-transparent" />
+      <input
+        placeholder="Type some emojis!"
+        className="grow bg-transparent outline-none"
+      />
+    </div>
+  );
+};
+type PostWithUser = RouterOutputs["posts"]["getAll"][number];
+const PostView = (props: PostWithUser) => {
+  const { post, author } = props;
+  return (
+    <div key={post.id} className="flex gap-3 border-b border-slate-300 p-4 ">
+      <Image
+        src={author.profileImageUrl}
+        alt={`@${author.username}'s profile image`}
+        className="rounded-full"
+        width={56}
+        height={56}
+      />
+      <div className="flex flex-col">
+        <div className="flex gap-1 font-semibold text-slate-100">
+          <span>{`@${author.username}`}</span>
+          <span className="font-thin">{` · ${dayjs(
+            post.createdAt
+          ).fromNow()}`}</span>
+        </div>
+        <span>{post.content}</span>
+      </div>
     </div>
   );
 };
@@ -41,13 +74,10 @@ const Home: NextPage = () => {
               </div>
             )}
             {user.isSignedIn && <CreatePostWizard />}
-            {/* <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" /> */}
           </div>
           <div className="flex flex-col">
-            {[...data, ...data]?.map((post) => (
-              <div key={post.id} className="border-b border-slate-300 p-7">
-                {post.content}
-              </div>
+            {[...data, ...data]?.map((fullPost) => (
+              <PostView {...fullPost} key={fullPost.post.id} />
             ))}
           </div>
         </div>
